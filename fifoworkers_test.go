@@ -16,22 +16,22 @@ type localTask struct {
 
 func TestRun50tasks1Worker(t *testing.T) {
 	runPool(50, t, Config{
-		workers:    1,
-		queueLimit: 1000,
+		Workers:    1,
+		QueueLimit: 1000,
 	})
 }
 
 func TestRun50tasks5Worker(t *testing.T) {
 	runPool(50, t, Config{
-		workers:    5,
-		queueLimit: 1000,
+		Workers:    5,
+		QueueLimit: 1000,
 	})
 }
 
 func TestRun50tasks50Worker(t *testing.T) {
 	runPool(50, t, Config{
-		workers:    50,
-		queueLimit: 1000,
+		Workers:    50,
+		QueueLimit: 1000,
 	})
 }
 

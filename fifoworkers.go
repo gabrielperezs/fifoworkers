@@ -32,8 +32,8 @@ type task struct {
 }
 
 type Config struct {
-	workers    int
-	queueLimit int
+	Workers    int
+	QueueLimit int
 }
 
 var (
@@ -43,20 +43,20 @@ var (
 // New create and return pool
 func New(c Config, f func(a interface{}) interface{}) *Pool {
 
-	if c.queueLimit == 0 {
-		c.queueLimit = queueLimit
+	if c.QueueLimit == 0 {
+		c.QueueLimit = queueLimit
 	}
 
-	if c.workers == 0 {
-		c.workers = runtime.NumCPU()
+	if c.Workers == 0 {
+		c.Workers = runtime.NumCPU()
 	}
 
 	p := &Pool{
 		f:       f,
-		t:       make([]interface{}, c.workers),
-		queueCh: make(chan *task, c.queueLimit),
-		C:       make(chan interface{}, c.queueLimit),
-		moveCh:  make(chan bool, c.queueLimit),
+		t:       make([]interface{}, c.Workers),
+		queueCh: make(chan *task, c.QueueLimit),
+		C:       make(chan interface{}, c.QueueLimit),
+		moveCh:  make(chan bool, c.QueueLimit),
 		index:   0,
 		count:   -1,
 		ended:   false,
@@ -64,7 +64,7 @@ func New(c Config, f func(a interface{}) interface{}) *Pool {
 
 	go p.move()
 
-	for o := 0; o < c.workers; o++ {
+	for o := 0; o < c.Workers; o++ {
 		go p.run()
 	}
 
@@ -102,6 +102,10 @@ func (p *Pool) move() {
 
 	for {
 		<-p.moveCh
+		if int(p.index) > len(p.t) {
+			continue
+		}
+
 		if p.t[p.index] == nil {
 			continue
 		}
