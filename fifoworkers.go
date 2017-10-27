@@ -7,9 +7,9 @@
 package fifoworkers
 
 import (
+	"log"
 	"runtime"
 	"sync"
-	"sync/atomic"
 )
 
 type Pool struct {
@@ -22,12 +22,12 @@ type Pool struct {
 	C       chan interface{}
 	moveCh  chan bool
 
-	index int64
-	count int64
+	index int
+	count int
 }
 
 type task struct {
-	i int64
+	i int
 	f interface{}
 }
 
@@ -53,7 +53,7 @@ func New(c Config, f func(a interface{}) interface{}) *Pool {
 
 	p := &Pool{
 		f:       f,
-		t:       make([]interface{}, c.Workers),
+		t:       make([]interface{}, 0),
 		queueCh: make(chan *task, c.QueueLimit),
 		C:       make(chan interface{}, c.QueueLimit),
 		moveCh:  make(chan bool, c.QueueLimit),
@@ -82,10 +82,17 @@ func (p *Pool) End() {
 
 // Add a task to the pool
 func (p *Pool) Add(a interface{}) {
+	p.Lock()
+	defer p.Unlock()
+
+	p.t = append(p.t, nil)
+	p.count++
+
 	p.queueCh <- &task{
-		i: atomic.AddInt64(&p.count, 1),
+		i: p.count,
 		f: a,
 	}
+
 }
 
 func (p *Pool) run() {
@@ -102,9 +109,6 @@ func (p *Pool) move() {
 
 	for {
 		<-p.moveCh
-		if int(p.index) > len(p.t) {
-			continue
-		}
 
 		if p.t[p.index] == nil {
 			continue
@@ -114,32 +118,24 @@ func (p *Pool) move() {
 
 		p.t[p.index] = nil
 
-		//log.Printf("++ Move to %d, count %d, queue %d, ended %t",
-		//	p.index, p.count, len(p.ch), p.ended)
+		log.Printf("++ Move to %d, count %d, queue %d, ended %t",
+			p.index, p.count, len(p.queueCh), p.ended)
 		if len(p.queueCh) == 0 && p.ended && p.index == p.count {
 			return
 		}
 
 		p.index++
 
-		if len(p.t) > int(p.index) {
-			go func() {
-				p.moveCh <- true
-			}()
-		}
+		go func() {
+			p.moveCh <- true
+		}()
 
 	}
 }
 
-func (p *Pool) store(i int64, t interface{}) {
+func (p *Pool) store(i int, t interface{}) {
 	p.Lock()
 	defer p.Unlock()
-
-	if i >= int64(len(p.t)) {
-		for v := int64(len(p.t)); v <= i; v++ {
-			p.t = append(p.t, nil)
-		}
-	}
 
 	p.t[i] = t
 
