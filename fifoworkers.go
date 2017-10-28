@@ -7,7 +7,6 @@
 package fifoworkers
 
 import (
-	"log"
 	"runtime"
 	"sync"
 )
@@ -110,6 +109,10 @@ func (p *Pool) move() {
 	for {
 		<-p.moveCh
 
+		if p.index > p.count {
+			continue
+		}
+
 		if p.t[p.index] == nil {
 			continue
 		}
@@ -118,8 +121,8 @@ func (p *Pool) move() {
 
 		p.t[p.index] = nil
 
-		log.Printf("++ Move to %d, count %d, queue %d, ended %t",
-			p.index, p.count, len(p.queueCh), p.ended)
+		// log.Printf("++ Move to %d, count %d, queue %d, ended %t",
+		// 	p.index, p.count, len(p.queueCh), p.ended)
 		if len(p.queueCh) == 0 && p.ended && p.index == p.count {
 			return
 		}

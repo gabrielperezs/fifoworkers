@@ -28,6 +28,13 @@ func TestRun50tasks5Worker(t *testing.T) {
 	})
 }
 
+func TestRun10tasks20Worker(t *testing.T) {
+	runPool(10, t, Config{
+		Workers:    20,
+		QueueLimit: 1000,
+	})
+}
+
 func TestRun50tasks50Worker(t *testing.T) {
 	runPool(50, t, Config{
 		Workers:    50,
